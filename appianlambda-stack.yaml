@@ -1,0 +1,217 @@
+## Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+#copies of the Software, and to permit persons to whom the Software is
+#furnished to do so, subject to the following conditions:
+#
+#The above copyright notice and this permission notice shall be included in all
+#copies or substantial portions of the Software.
+#
+#THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+#IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+#FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+#AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+#LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+#OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+#SOFTWARE.
+
+AWSTemplateFormatVersion: '2010-09-09'
+Description: This is a sample template. Please review security roles and policies and update template before using.
+
+
+Resources:
+
+  LambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: lambda-role-AppianSageMaker
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action:
+            - sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service:
+              - lambda.amazonaws.com
+              - sagemaker.amazonaws.com
+        Version: 2012-10-17
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AWSLambda_FullAccess
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess
+        - arn:aws:iam::aws:policy/AmazonSageMakerFullAccess
+        - arn:aws:iam::aws:policy/AmazonSQSFullAccess
+      Path: /
+      Policies:
+        - PolicyName: iamgetrole
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: 'iam:GetRole'
+                Resource: '*'
+  
+  SagemakerListModelsFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: sagemaker_list_models_CF
+      Description: LambdaFunction to list models
+      Runtime: python3.9
+      #update code property with location of code for lambda function
+      Code: src/appian-lambda
+      Handler: sagemaker_list_models.lambda_handler
+      MemorySize: 256
+      Timeout: 6
+      Role:
+        Fn::GetAtt:
+          - LambdaRole
+          - Arn
+          
+  SagemakerMyModelsFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: sagemaker_my_models_CF
+      Description: Lambda function to list my models
+      Runtime: python3.9
+      Code: src/appian-lambda
+      Handler: sagemaker_my_models.lambda_handler
+      MemorySize: 256
+      Timeout: 6
+      Role:
+        Fn::GetAtt:
+          - LambdaRole
+          - Arn        
+          
+  SagemakerMyAIdeploymentFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: sagemaker_myAIdeployment_CF
+      Description: Lambda function to manage my SageMaker models and endpoints
+      Runtime: python3.9
+      Code: src/appian-lambda
+      Handler: sagemaker_myAIdeployment.lambda_handler
+      MemorySize: 256
+      Timeout: 16
+      Role:
+        Fn::GetAtt:
+          - LambdaRole
+          - Arn          
+          
+  SagemakerListPipelineExecutionsFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: sagemaker_list_pipeline_executions_CF
+      Description: Lambda function to list my model training jobs
+      Runtime: python3.9
+      Code: src/appian-lambda
+      Handler: sagemaker_list_pipeline_executions.lambda_handler
+      MemorySize: 256
+      Timeout: 6
+      Role:
+        Fn::GetAtt:
+          - LambdaRole
+          - Arn     
+
+  SagemakerGetEndpointFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: sagemaker_getEndpoint_CF
+      Description: Lambda function to get an endpoint status
+      Runtime: python3.9
+      Code: src/appian-lambda
+      Handler: sagemaker_getEndpoint.lambda_handler
+      MemorySize: 256
+      Timeout: 5
+      Role:
+        Fn::GetAtt:
+          - LambdaRole
+          - Arn             
+          
+  SagemakerDeleteEndpointFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: sagemaker_delete_endpoint_CF
+      Description: Lambda function to delete an endpoint
+      Runtime: python3.9
+      Code: src/appian-lambda
+      Handler: sagemaker_delete_endpoint.lambda_handler
+      MemorySize: 256
+      Timeout: 5
+      Role:
+        Fn::GetAtt:
+          - LambdaRole
+          - Arn   
+  SagemakerDeleteModelFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: sagemaker_delete_model_CF
+      Description: Lambda function to delete a model
+      Runtime: python3.9
+      Code: src/appian-lambda
+      Handler: sagemaker_delete_model.lambda_handler
+      MemorySize: 256
+      Timeout: 5
+      Role:
+        Fn::GetAtt:
+          - LambdaRole
+          - Arn           
+          
+  SagemakerPurgeEndpointsFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: sagemaker_purgeEndpoints_CF
+      Description: Lambda function to purge endpoints by age
+      Runtime: python3.9
+      Code: src/appian-lambda
+      Handler: sagemaker_purgeEndpoints.lambda_handler
+      MemorySize: 256
+      Timeout: 15
+      Role:
+        Fn::GetAtt:
+          - LambdaRole
+          - Arn          
+
+  LambdaLogGroupListModels:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/lambda/sagemaker_list_models_CF/CF
+      RetentionInDays: 90
+
+  LambdaLogGroupMyModels:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/lambda/sagemaker_my_models_CF/CF
+      RetentionInDays: 90
+      
+  LambdaLogGroupMyAIdeployment:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/lambda/sagemaker_myAIdeployment_CF/CF
+      RetentionInDays: 90    
+      
+  LambdaLogGroupListPipelineExecutions:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/lambda/sagemaker_list_pipeline_executions_CF/CF
+      RetentionInDays: 90  
+
+  LambdaLogGroupGetEndpoint:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/lambda/sagemaker_getEndpoint_CF/CF
+      RetentionInDays: 90    
+  LambdaLogGroupDeleteEndpoint:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/lambda/sagemaker_delete_endpoint_CF/CF
+      RetentionInDays: 90   
+  LambdaLogGroupDeleteModel:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/lambda/sagemaker_delete_model_CF/CF
+      RetentionInDays: 90  
+  LambdaLogGroupPurgeEndpoints:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/lambda/sagemaker_purgeEndpoints_CF/CF
+      RetentionInDays: 90       
